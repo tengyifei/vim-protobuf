@@ -1,32 +1,17 @@
 " Protocol Buffers - Google's data interchange format
-" Copyright 2008 Google Inc.  All rights reserved.
-" http://code.google.com/p/protobuf/
+" Copyright 2008 Google Inc.
 "
-" Redistribution and use in source and binary forms, with or without
-" modification, are permitted provided that the following conditions are
-" met:
+" Licensed under the Apache License, Version 2.0 (the "License");
+" you may not use this file except in compliance with the License.
+" You may obtain a copy of the License at
 "
-"     * Redistributions of source code must retain the above copyright
-" notice, this list of conditions and the following disclaimer.
-"     * Redistributions in binary form must reproduce the above
-" copyright notice, this list of conditions and the following disclaimer
-" in the documentation and/or other materials provided with the
-" distribution.
-"     * Neither the name of Google Inc. nor the names of its
-" contributors may be used to endorse or promote products derived from
-" this software without specific prior written permission.
+"      http:"www.apache.org/licenses/LICENSE-2.0
 "
-" THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-" "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-" LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-" A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-" OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-" SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-" LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-" DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-" THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-" OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+" Unless required by applicable law or agreed to in writing, software
+" distributed under the License is distributed on an "AS IS" BASIS,
+" WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+" See the License for the specific language governing permissions and
+" limitations under the License.
 
 " This is the Vim syntax file for Google Protocol Buffers.
 "
@@ -75,6 +60,18 @@ syn region  pbComment start="//" skip="\\$" end="$" keepend contains=@pbCommentG
 syn region  pbString  start=/"/ skip=/\\"/ end=/"/
 syn region  pbString  start=/'/ skip=/\\'/ end=/'/
 
+syn match	cSpecial	display contained "\\\(x\x\+\|\o\{1,3}\|.\|$\)"
+
+" A comment can contain cString, cCharacter and cNumber.
+" But a "*/" inside a cString in a cComment DOES end the comment!  So we
+" need to use a special type of cString: cCommentString, which also ends on
+" "*/", and sees a "*" at the start of the line as comment again.
+" Unfortunately this doesn't very well work for // type of comments :-(
+syntax match	cCommentSkip	contained "^\s*\*\($\|\s\+\)"
+syntax region cCommentString	contained start=+L\=\\\@<!"+ skip=+\\\\\|\\"+ end=+"+ end=+\*/+me=s-1 contains=cSpecial,cCommentSkip
+syntax region cComment2String	contained start=+L\=\\\@<!"+ skip=+\\\\\|\\"+ end=+"+ end="$" contains=cSpecial
+syntax region cComment start="/\*" end="\*/" extend
+
 if version >= 508 || !exists("did_proto_syn_inits")
   if version < 508
     let did_proto_syn_inits = 1
@@ -98,9 +95,11 @@ if version >= 508 || !exists("did_proto_syn_inits")
   HiLink pbInt          Number
   HiLink pbFloat        Float
   HiLink pbComment      Comment
+  HiLink cComment       Comment
   HiLink pbString       String
 
   delcommand HiLink
 endif
 
 let b:current_syntax = "proto"
+
